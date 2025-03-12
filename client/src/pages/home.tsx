@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { VoiceRecorder, speechRecognition } from "@/lib/voice";
 import { analyzeTranscript } from "@/lib/openai";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ export default function Home() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   const { data: bibleQuote } = useQuery({
     queryKey: ["/api/bible-quote"],
@@ -25,6 +27,8 @@ export default function Home() {
         title: "Analysis Complete",
         description: "Your tasks have been processed and organized.",
       });
+      // Navigate to dashboard after successful analysis
+      navigate("/dashboard");
     },
     onError: (error) => {
       toast({
@@ -39,17 +43,17 @@ export default function Home() {
     try {
       await voiceRecorder.startRecording();
       setIsRecording(true);
-      
+
       speechRecognition.onresult = (event) => {
         const current = event.resultIndex;
         setTranscript(event.results[current][0].transcript);
       };
-      
+
       speechRecognition.start();
     } catch (error) {
       toast({
         title: "Recording Failed",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Failed to start recording",
         variant: "destructive",
       });
     }
@@ -60,14 +64,14 @@ export default function Home() {
       await voiceRecorder.stopRecording();
       speechRecognition.stop();
       setIsRecording(false);
-      
+
       if (transcript) {
         analyzeMutation.mutate(transcript);
       }
     } catch (error) {
       toast({
         title: "Error Stopping Recording",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Failed to stop recording",
         variant: "destructive",
       });
     }
@@ -105,55 +109,13 @@ export default function Home() {
               <Mic className="h-6 w-6" />
             )}
           </Button>
-          
+
           {transcript && (
             <p className="mt-4 text-muted-foreground">{transcript}</p>
           )}
         </div>
 
-        {analyzeMutation.data && (
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Summary</h2>
-                <p>{analyzeMutation.data.summary}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Top Priorities</h2>
-                <ul className="list-disc pl-4 space-y-2">
-                  {analyzeMutation.data.priorities.map((priority, i) => (
-                    <li key={i}>{priority}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Daily Tasks</h2>
-                <ul className="list-disc pl-4 space-y-2">
-                  {analyzeMutation.data.dailyTasks.map((task, i) => (
-                    <li key={i}>{task}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-semibold mb-4">Long-term Goals</h2>
-                <ul className="list-disc pl-4 space-y-2">
-                  {analyzeMutation.data.longTermGoals.map((goal, i) => (
-                    <li key={i}>{goal}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+        {/* Remove the analysis display from home since it will be shown in dashboard */}
       </main>
     </div>
   );

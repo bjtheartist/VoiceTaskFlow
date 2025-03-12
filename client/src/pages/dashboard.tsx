@@ -72,12 +72,16 @@ export default function Dashboard() {
               <div key={task.id} className="border rounded-lg p-4">
                 <h3 className="font-semibold mb-2">{task.summary}</h3>
                 <div className="space-y-2">
+                  <p className="text-sm text-muted-foreground">Original Transcript:</p>
+                  <p className="italic text-sm mb-4">{task.transcript}</p>
+
                   <p className="text-sm text-muted-foreground">Priorities:</p>
                   <ul className="list-disc pl-4">
                     {task.priorities.map((priority, index) => (
                       <li key={index}>{priority}</li>
                     ))}
                   </ul>
+
                   <p className="text-sm text-muted-foreground mt-2">Daily Tasks:</p>
                   <ul className="space-y-1">
                     {task.dailyTasks.map((dailyTask, index) => (
@@ -87,6 +91,17 @@ export default function Dashboard() {
                       </li>
                     ))}
                   </ul>
+
+                  <p className="text-sm text-muted-foreground mt-2">Long-term Goals:</p>
+                  <ul className="list-disc pl-4">
+                    {task.longTermGoals.map((goal, index) => (
+                      <li key={index}>{goal}</li>
+                    ))}
+                  </ul>
+
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Created: {new Date(task.createdAt).toLocaleString()}
+                  </p>
                 </div>
               </div>
             ))}
