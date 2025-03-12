@@ -13,6 +13,16 @@ if (!process.env.OPENAI_API_KEY) {
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function registerRoutes(app: Express) {
+  app.get("/api/tasks", async (_req, res) => {
+    try {
+      const tasks = await storage.getTasks();
+      res.json(tasks);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tasks';
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
   app.get("/api/bible-quote", async (_req, res) => {
     try {
       const response = await fetch("https://bible-api.com/john 3:16");
