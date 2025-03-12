@@ -12,6 +12,28 @@ if (!process.env.OPENAI_API_KEY) {
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+const BIBLE_VERSES = [
+  'john 3:16',
+  'philippians 4:13',
+  'jeremiah 29:11',
+  'psalm 23:1',
+  'romans 8:28',
+  'matthew 6:33',
+  'isaiah 41:10',
+  'proverbs 3:5-6',
+  'joshua 1:9',
+  '2 corinthians 12:9',
+  'matthew 11:28',
+  'romans 12:2',
+  'psalm 46:1',
+  'john 14:6',
+  'philippians 4:6-7'
+];
+
+function getRandomVerse() {
+  return BIBLE_VERSES[Math.floor(Math.random() * BIBLE_VERSES.length)];
+}
+
 export async function registerRoutes(app: Express) {
   app.get("/api/tasks", async (_req, res) => {
     try {
@@ -79,7 +101,8 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/bible-quote", async (_req, res) => {
     try {
-      const response = await fetch("https://bible-api.com/john 3:16");
+      const verse = getRandomVerse();
+      const response = await fetch(`https://bible-api.com/${verse}`);
       const data = await response.json();
       res.json({ text: data.text, reference: data.reference });
     } catch (error: unknown) {

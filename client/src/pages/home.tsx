@@ -19,6 +19,10 @@ export default function Home() {
 
   const { data: bibleQuote } = useQuery({
     queryKey: ["/api/bible-quote"],
+    // Refetch the quote every 5 minutes
+    refetchInterval: 5 * 60 * 1000,
+    // Also refetch when the window regains focus
+    refetchOnWindowFocus: true,
   });
 
   const analyzeMutation = useMutation({
