@@ -34,6 +34,38 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.get("/api/analytics/progress", async (_req, res) => {
+    try {
+      const progress = await storage.getTaskProgress();
+      res.json(progress);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch progress analytics';
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
+  app.get("/api/analytics/categories", async (_req, res) => {
+    try {
+      const distribution = await storage.getCategoryDistribution();
+      res.json(distribution);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch category analytics';
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
+  app.post("/api/tasks/:id/progress", async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      const progress = parseInt(req.body.progress);
+      const task = await storage.updateTaskProgress(taskId, progress);
+      res.json(task);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update task progress';
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
   app.post("/api/tasks/:id/confirm", async (req, res) => {
     try {
       const taskId = parseInt(req.params.id);
@@ -65,7 +97,7 @@ export async function registerRoutes(app: Express) {
         messages: [
           {
             role: "system",
-            content: "Analyze the following transcript and extract: a brief summary, top 3 priorities, daily tasks, and long-term goals. Format the response as JSON with the following structure: { summary: string, priorities: string[], dailyTasks: string[], longTermGoals: string[] }"
+            content: "Analyze the following transcript and extract: a brief summary, top 3 priorities, daily tasks, long-term goals, and suggest a category (e.g., 'work', 'personal', 'health', 'education'). Format the response as JSON with the following structure: { summary: string, priorities: string[], dailyTasks: string[], longTermGoals: string[], category: string }"
           },
           {
             role: "user",
@@ -87,7 +119,8 @@ export async function registerRoutes(app: Express) {
         summary: analysis.summary,
         priorities: analysis.priorities,
         dailyTasks: analysis.dailyTasks,
-        longTermGoals: analysis.longTermGoals
+        longTermGoals: analysis.longTermGoals,
+        category: analysis.category || 'uncategorized'
       });
 
       res.json(analysis);

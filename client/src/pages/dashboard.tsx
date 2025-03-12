@@ -13,8 +13,16 @@ export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: tasks, isLoading } = useQuery<Task[]>({
+  const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
+  });
+
+  const { data: progress, isLoading: progressLoading } = useQuery({
+    queryKey: ["/api/analytics/progress"],
+  });
+
+  const { data: categories, isLoading: categoriesLoading } = useQuery({
+    queryKey: ["/api/analytics/categories"],
   });
 
   const confirmTaskMutation = useMutation({
@@ -24,6 +32,8 @@ export default function Dashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/progress"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/categories"] });
       toast({
         title: "Task Confirmed",
         description: "The task has been confirmed and saved.",
@@ -31,7 +41,19 @@ export default function Dashboard() {
     },
   });
 
-  if (isLoading) {
+  const updateProgressMutation = useMutation({
+    mutationFn: async ({ taskId, progress }: { taskId: number; progress: number }) => {
+      const response = await apiRequest("POST", `/api/tasks/${taskId}/progress`, { progress });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/progress"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/categories"] });
+    },
+  });
+
+  if (tasksLoading || progressLoading || categoriesLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -39,19 +61,8 @@ export default function Dashboard() {
     );
   }
 
-  // Calculate analytics data
   const totalTasks = tasks?.length || 0;
   const confirmedTasks = tasks?.filter(task => task.isConfirmed).length || 0;
-  const tasksByDate = tasks?.reduce((acc: { [key: string]: number }, task) => {
-    const date = format(new Date(task.createdAt), 'MMM d');
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {});
-
-  const chartData = Object.entries(tasksByDate || {}).map(([date, count]) => ({
-    date,
-    tasks: count,
-  }));
 
   // Get tasks for the last 7 days
   const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -110,7 +121,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="h-[200px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
+                  <BarChart data={progress?.recentTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
                     <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
                     <YAxis stroke="hsl(var(--muted-foreground))" />
@@ -120,7 +131,8 @@ export default function Dashboard() {
                         border: "1px solid hsl(var(--border))"
                       }}
                     />
-                    <Bar dataKey="tasks" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar name="Completed" dataKey="completed" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    <Bar name="Added" dataKey="added" fill="hsl(var(--muted))" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -132,39 +144,25 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />
-                  Calendar View
+                  Category Distribution
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-7 gap-2 text-center text-sm">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <div key={day} className="font-medium text-muted-foreground">
-                      {day}
+                <div className="space-y-4">
+                  {categories?.map((category) => (
+                    <div key={category.category} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="capitalize text-sm font-medium">{category.category}</span>
+                        <span className="text-sm text-muted-foreground">{category.count} tasks</span>
+                      </div>
+                      <div className="h-1 bg-primary/20 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary rounded-full transition-all duration-500"
+                          style={{ width: `${category.completionRate}%` }}
+                        />
+                      </div>
                     </div>
                   ))}
-                  {last7Days.map(date => {
-                    const dayTasks = tasks?.filter(task => 
-                      format(new Date(task.createdAt), 'yyyy-MM-dd') === date
-                    );
-                    return (
-                      <motion.div
-                        key={date}
-                        whileHover={{ scale: 1.1 }}
-                        className={`p-2 rounded-lg transition-colors ${
-                          dayTasks?.length 
-                            ? 'bg-primary/10 hover:bg-primary/20 cursor-pointer' 
-                            : 'bg-muted/5'
-                        }`}
-                      >
-                        <div className="font-medium">{format(new Date(date), 'd')}</div>
-                        {dayTasks?.length > 0 && (
-                          <div className="text-xs text-primary font-medium mt-1">
-                            {dayTasks.length} tasks
-                          </div>
-                        )}
-                      </motion.div>
-                    );
-                  })}
                 </div>
               </CardContent>
             </Card>
@@ -194,7 +192,12 @@ export default function Dashboard() {
                     }`}
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-xl font-semibold">{task.summary}</h3>
+                      <div>
+                        <h3 className="text-xl font-semibold">{task.summary}</h3>
+                        <p className="text-sm text-muted-foreground mt-1 capitalize">
+                          Category: {task.category}
+                        </p>
+                      </div>
                       <Button
                         variant={task.isConfirmed ? "ghost" : "outline"}
                         size="sm"
@@ -214,6 +217,36 @@ export default function Dashboard() {
                     </div>
 
                     <div className="space-y-4">
+                      <div>
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                          Progress
+                        </h4>
+                        <div className="h-2 bg-primary/20 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-primary rounded-full transition-all duration-500"
+                            style={{ width: `${task.progress}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between mt-1">
+                          <span className="text-xs text-muted-foreground">{task.progress}% Complete</span>
+                          {!task.isConfirmed && (
+                            <div className="flex gap-2">
+                              {[25, 50, 75, 100].map((progress) => (
+                                <Button
+                                  key={progress}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2"
+                                  onClick={() => updateProgressMutation.mutate({ taskId: task.id, progress })}
+                                >
+                                  {progress}%
+                                </Button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                       <div>
                         <h4 className="text-sm font-medium text-muted-foreground mb-2">
                           Original Transcript
