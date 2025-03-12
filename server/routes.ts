@@ -23,6 +23,28 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.get("/api/tasks/by-date/:date", async (req, res) => {
+    try {
+      const date = new Date(req.params.date);
+      const tasks = await storage.getTasksByDate(date);
+      res.json(tasks);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tasks';
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
+  app.post("/api/tasks/:id/confirm", async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      const task = await storage.confirmTask(taskId);
+      res.json(task);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to confirm task';
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
   app.get("/api/bible-quote", async (_req, res) => {
     try {
       const response = await fetch("https://bible-api.com/john 3:16");

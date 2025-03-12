@@ -4,6 +4,8 @@ export interface IStorage {
   createTask(task: InsertTask): Promise<Task>;
   getTask(id: number): Promise<Task | undefined>;
   getTasks(): Promise<Task[]>;
+  getTasksByDate(date: Date): Promise<Task[]>;
+  confirmTask(id: number): Promise<Task>;
 }
 
 export class MemStorage implements IStorage {
@@ -21,6 +23,7 @@ export class MemStorage implements IStorage {
       id,
       ...insertTask,
       createdAt: new Date(),
+      isConfirmed: false,
       priorities: Array.isArray(insertTask.priorities) ? insertTask.priorities : [],
       dailyTasks: Array.isArray(insertTask.dailyTasks) ? insertTask.dailyTasks : [],
       longTermGoals: Array.isArray(insertTask.longTermGoals) ? insertTask.longTermGoals : [],
@@ -35,6 +38,30 @@ export class MemStorage implements IStorage {
 
   async getTasks(): Promise<Task[]> {
     return Array.from(this.tasks.values());
+  }
+
+  async getTasksByDate(date: Date): Promise<Task[]> {
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    return Array.from(this.tasks.values()).filter(task => {
+      const taskDate = new Date(task.createdAt);
+      return taskDate >= startOfDay && taskDate <= endOfDay;
+    });
+  }
+
+  async confirmTask(id: number): Promise<Task> {
+    const task = await this.getTask(id);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    const updatedTask = { ...task, isConfirmed: true };
+    this.tasks.set(id, updatedTask);
+    return updatedTask;
   }
 }
 
