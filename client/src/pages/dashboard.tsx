@@ -1,17 +1,28 @@
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Task } from "@shared/schema";
-import { Loader2, CheckCircle2, Circle, Calendar, BarChart3, ListTodo } from "lucide-react";
+import { Loader2, CheckCircle2, Circle, Calendar, BarChart3, ListTodo, Pencil } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Button } from "@/components/ui/button";
 import { format, subDays } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function Dashboard() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
@@ -53,6 +64,37 @@ export default function Dashboard() {
     },
   });
 
+  const updateTaskMutation = useMutation({
+    mutationFn: async (updates: { id: number; data: Partial<Task> }) => {
+      const response = await apiRequest("POST", `/api/tasks/${updates.id}`, updates.data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/progress"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/analytics/categories"] });
+      toast({
+        title: "Task Updated",
+        description: "Your changes have been saved successfully.",
+      });
+      setEditingTask(null);
+    },
+  });
+
+  const handleSaveEdit = (task: Task) => {
+    updateTaskMutation.mutate({
+      id: task.id,
+      data: {
+        summary: task.summary,
+        transcript: task.transcript,
+        priorities: task.priorities,
+        dailyTasks: task.dailyTasks,
+        longTermGoals: task.longTermGoals,
+        category: task.category,
+      },
+    });
+  };
+
   if (tasksLoading || progressLoading || categoriesLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -64,7 +106,6 @@ export default function Dashboard() {
   const totalTasks = tasks?.length || 0;
   const confirmedTasks = tasks?.filter(task => task.isConfirmed).length || 0;
 
-  // Get tasks for the last 7 days
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = subDays(new Date(), i);
     return format(date, 'yyyy-MM-dd');
@@ -98,7 +139,7 @@ export default function Dashboard() {
                   <p className="text-3xl font-bold">{totalTasks}</p>
                   <p className="text-sm text-muted-foreground">Total Tasks</p>
                   <div className="h-1 bg-primary/20 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-primary rounded-full transition-all duration-500"
                       style={{ width: `${(confirmedTasks / totalTasks) * 100}%` }}
                     />
@@ -125,8 +166,8 @@ export default function Dashboard() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
                     <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
                     <YAxis stroke="hsl(var(--muted-foreground))" />
-                    <Tooltip 
-                      contentStyle={{ 
+                    <Tooltip
+                      contentStyle={{
                         backgroundColor: "hsl(var(--background))",
                         border: "1px solid hsl(var(--border))"
                       }}
@@ -156,7 +197,7 @@ export default function Dashboard() {
                         <span className="text-sm text-muted-foreground">{category.count} tasks</span>
                       </div>
                       <div className="h-1 bg-primary/20 rounded-full overflow-hidden">
-                        <div 
+                        <div
                           className="h-full bg-primary rounded-full transition-all duration-500"
                           style={{ width: `${category.completionRate}%` }}
                         />
@@ -186,8 +227,8 @@ export default function Dashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
                     className={`border rounded-lg p-6 transition-all duration-300 ${
-                      task.isConfirmed 
-                        ? 'bg-primary/5 border-primary/20' 
+                      task.isConfirmed
+                        ? 'bg-primary/5 border-primary/20'
                         : 'hover:border-primary/50'
                     }`}
                   >
@@ -198,22 +239,32 @@ export default function Dashboard() {
                           Category: {task.category}
                         </p>
                       </div>
-                      <Button
-                        variant={task.isConfirmed ? "ghost" : "outline"}
-                        size="sm"
-                        onClick={() => !task.isConfirmed && confirmTaskMutation.mutate(task.id)}
-                        disabled={task.isConfirmed || confirmTaskMutation.isPending}
-                        className="transition-all duration-300"
-                      >
-                        {task.isConfirmed ? (
-                          <div className="flex items-center gap-2 text-green-500">
-                            <CheckCircle2 className="h-4 w-4" />
-                            <span>Completed</span>
-                          </div>
-                        ) : (
-                          "Confirm Task"
-                        )}
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingTask(task)}
+                          className="hover:bg-primary/10"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant={task.isConfirmed ? "ghost" : "outline"}
+                          size="sm"
+                          onClick={() => !task.isConfirmed && confirmTaskMutation.mutate(task.id)}
+                          disabled={task.isConfirmed || confirmTaskMutation.isPending}
+                          className="transition-all duration-300"
+                        >
+                          {task.isConfirmed ? (
+                            <div className="flex items-center gap-2 text-green-500">
+                              <CheckCircle2 className="h-4 w-4" />
+                              <span>Completed</span>
+                            </div>
+                          ) : (
+                            "Confirm Task"
+                          )}
+                        </Button>
+                      </div>
                     </div>
 
                     <div className="space-y-4">
@@ -222,7 +273,7 @@ export default function Dashboard() {
                           Progress
                         </h4>
                         <div className="h-2 bg-primary/20 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-primary rounded-full transition-all duration-500"
                             style={{ width: `${task.progress}%` }}
                           />
@@ -309,6 +360,115 @@ export default function Dashboard() {
             </AnimatePresence>
           </CardContent>
         </Card>
+
+        <Dialog open={!!editingTask} onOpenChange={() => setEditingTask(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Edit Task</DialogTitle>
+              <DialogDescription>
+                Make changes to your task details below.
+              </DialogDescription>
+            </DialogHeader>
+            {editingTask && (
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Summary</label>
+                  <Input
+                    value={editingTask.summary}
+                    onChange={(e) =>
+                      setEditingTask({ ...editingTask, summary: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Category</label>
+                  <Input
+                    value={editingTask.category}
+                    onChange={(e) =>
+                      setEditingTask({ ...editingTask, category: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Transcript</label>
+                  <Textarea
+                    value={editingTask.transcript}
+                    onChange={(e) =>
+                      setEditingTask({ ...editingTask, transcript: e.target.value })
+                    }
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Priorities</label>
+                  <Textarea
+                    value={editingTask.priorities.join("\n")}
+                    onChange={(e) =>
+                      setEditingTask({
+                        ...editingTask,
+                        priorities: e.target.value.split("\n").filter(Boolean),
+                      })
+                    }
+                    rows={3}
+                    placeholder="Enter each priority on a new line"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Daily Tasks</label>
+                  <Textarea
+                    value={editingTask.dailyTasks.join("\n")}
+                    onChange={(e) =>
+                      setEditingTask({
+                        ...editingTask,
+                        dailyTasks: e.target.value.split("\n").filter(Boolean),
+                      })
+                    }
+                    rows={3}
+                    placeholder="Enter each task on a new line"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Long-term Goals</label>
+                  <Textarea
+                    value={editingTask.longTermGoals.join("\n")}
+                    onChange={(e) =>
+                      setEditingTask({
+                        ...editingTask,
+                        longTermGoals: e.target.value.split("\n").filter(Boolean),
+                      })
+                    }
+                    rows={3}
+                    placeholder="Enter each goal on a new line"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingTask(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => handleSaveEdit(editingTask)}
+                    disabled={updateTaskMutation.isPending}
+                  >
+                    {updateTaskMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </motion.div>
     </div>
   );

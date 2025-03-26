@@ -153,6 +153,18 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  app.post("/api/tasks/:id", async (req, res) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      const updates = insertTaskSchema.partial().parse(req.body);
+      const task = await storage.updateTask(taskId, updates);
+      res.json(task);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update task';
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

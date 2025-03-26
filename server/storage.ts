@@ -8,6 +8,7 @@ export interface IStorage {
   getTasksByDate(date: Date): Promise<Task[]>;
   confirmTask(id: number): Promise<Task>;
   updateTaskProgress(id: number, progress: number): Promise<Task>;
+  updateTask(id: number, updates: Partial<InsertTask>): Promise<Task>;
   getTaskProgress(): Promise<TaskProgress>;
   getCategoryDistribution(): Promise<CategoryDistribution[]>;
 }
@@ -86,6 +87,23 @@ export class MemStorage implements IStorage {
       progress: Math.min(100, Math.max(0, progress)),
       isConfirmed: progress === 100,
       completedAt: progress === 100 ? new Date() : null
+    };
+    this.tasks.set(id, updatedTask);
+    return updatedTask;
+  }
+
+  async updateTask(id: number, updates: Partial<InsertTask>): Promise<Task> {
+    const task = await this.getTask(id);
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    const updatedTask = { 
+      ...task,
+      ...updates,
+      priorities: Array.isArray(updates.priorities) ? updates.priorities : task.priorities,
+      dailyTasks: Array.isArray(updates.dailyTasks) ? updates.dailyTasks : task.dailyTasks,
+      longTermGoals: Array.isArray(updates.longTermGoals) ? updates.longTermGoals : task.longTermGoals,
     };
     this.tasks.set(id, updatedTask);
     return updatedTask;
