@@ -4,3 +4,11 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment files (contain secrets)
+.env
+.env.local
+
+# IDE/Editor
+.local/
+.breakpoints

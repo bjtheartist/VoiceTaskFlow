@@ -5,12 +5,40 @@ import { storage } from "./storage";
 import { insertTaskSchema } from "@shared/schema";
 import type { AIAnalysis } from "@shared/schema";
 
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error("OPENAI_API_KEY environment variable is required");
+// Demo mode when no OpenAI API key is provided
+const DEMO_MODE = !process.env.OPENAI_API_KEY;
+
+if (DEMO_MODE) {
+  console.log("⚠️  Running in DEMO MODE - OpenAI API key not set");
+  console.log("   AI analysis will return mock responses");
+  console.log("   Set OPENAI_API_KEY in .env for real AI analysis\n");
 }
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Only initialize OpenAI if we have an API key
+const openai = DEMO_MODE ? null : new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Generate mock AI analysis for demo mode
+function generateMockAnalysis(transcript: string): AIAnalysis {
+  const words = transcript.split(' ').slice(0, 5).join(' ');
+  return {
+    summary: `Demo analysis of: "${words}..."`,
+    priorities: [
+      "Review your spoken notes",
+      "Organize tasks by importance",
+      "Set realistic deadlines"
+    ],
+    dailyTasks: [
+      "Check your task dashboard",
+      "Update progress on current tasks",
+      "Plan tomorrow's priorities"
+    ],
+    longTermGoals: [
+      "Build consistent productivity habits",
+      "Improve time management skills"
+    ],
+    category: "personal"
+  };
+}
 
 const BIBLE_VERSES = [
   'john 3:16',
@@ -115,29 +143,37 @@ export async function registerRoutes(app: Express) {
     try {
       const { transcript } = req.body;
 
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "Analyze the following transcript and extract: a brief summary, top 3 priorities, daily tasks, long-term goals, and suggest a category (e.g., 'work', 'personal', 'health', 'education'). Format the response as JSON with the following structure: { summary: string, priorities: string[], dailyTasks: string[], longTermGoals: string[], category: string }"
-          },
-          {
-            role: "user",
-            content: transcript
-          }
-        ],
-        response_format: { type: "json_object" }
-      });
+      let analysis: AIAnalysis;
 
-      const content = completion.choices[0]?.message?.content;
-      if (!content) {
-        throw new Error("No content received from OpenAI");
+      if (DEMO_MODE || !openai) {
+        // Use mock analysis in demo mode
+        analysis = generateMockAnalysis(transcript);
+      } else {
+        // Use real OpenAI analysis
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [
+            {
+              role: "system",
+              content: "Analyze the following transcript and extract: a brief summary, top 3 priorities, daily tasks, long-term goals, and suggest a category (e.g., 'work', 'personal', 'health', 'education'). Format the response as JSON with the following structure: { summary: string, priorities: string[], dailyTasks: string[], longTermGoals: string[], category: string }"
+            },
+            {
+              role: "user",
+              content: transcript
+            }
+          ],
+          response_format: { type: "json_object" }
+        });
+
+        const content = completion.choices[0]?.message?.content;
+        if (!content) {
+          throw new Error("No content received from OpenAI");
+        }
+
+        analysis = JSON.parse(content) as AIAnalysis;
       }
 
-      const analysis = JSON.parse(content) as AIAnalysis;
-
-      const task = await storage.createTask({
+      await storage.createTask({
         transcript,
         summary: analysis.summary,
         priorities: analysis.priorities,
