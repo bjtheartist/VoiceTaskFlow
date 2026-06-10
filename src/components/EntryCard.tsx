@@ -8,7 +8,13 @@ const MOOD_GLYPHS: Record<string, string> = {
   reflective: "✶",
 };
 
-export default function EntryCard({ entry }: { entry: Entry }) {
+export default function EntryCard({
+  entry,
+  project,
+}: {
+  entry: Entry;
+  project?: { name: string; color: string } | null;
+}) {
   const time = new Date(entry.createdAt).toLocaleTimeString("en-US", {
     hour: "numeric",
     minute: "2-digit",
@@ -16,8 +22,18 @@ export default function EntryCard({ entry }: { entry: Entry }) {
 
   return (
     <article className="rounded-xl border border-ink-700 bg-ink-900/60 p-5">
-      <div className="mb-2 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-ink-400">
-        <span>{time}</span>
+      <div className="mb-2 flex items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-400">
+        <span className="flex items-center gap-3">
+          {time}
+          {project && (
+            <span
+              className="rounded-full border px-2 py-0.5 tracking-wider"
+              style={{ color: project.color, borderColor: project.color + "55" }}
+            >
+              {project.name}
+            </span>
+          )}
+        </span>
         {entry.mood && (
           <span className="flex items-center gap-1.5 text-ember-400/80">
             <span aria-hidden>{MOOD_GLYPHS[entry.mood] ?? "◌"}</span>

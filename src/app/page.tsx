@@ -45,7 +45,7 @@ export default async function TodayPage() {
       </div>
 
       <div className="rise rise-1">
-        <Recorder />
+        <Recorder projects={allProjects} />
       </div>
 
       <section className="rise rise-2 mt-8">
@@ -99,7 +99,11 @@ export default async function TodayPage() {
           </h2>
           <div className="space-y-3">
             {todayEntries.map((e) => (
-              <EntryCard key={e.id} entry={e} />
+              <EntryCard
+                key={e.id}
+                entry={e}
+                project={allProjects.find((p) => p.id === e.projectId)}
+              />
             ))}
           </div>
         </section>

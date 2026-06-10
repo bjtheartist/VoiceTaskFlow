@@ -99,7 +99,11 @@ export default async function JournalPage() {
                 </div>
                 <div className="space-y-3">
                   {dayEntries.map((e) => (
-                    <EntryCard key={e.id} entry={e} />
+                    <EntryCard
+                      key={e.id}
+                      entry={e}
+                      project={allProjects.find((p) => p.id === e.projectId)}
+                    />
                   ))}
                   {dayTasks.length > 0 && (
                     <ul className="space-y-0.5 pt-1">

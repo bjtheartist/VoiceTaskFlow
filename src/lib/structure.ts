@@ -80,7 +80,9 @@ const CUE_PREFIX =
 function heuristicStructure(transcript: string): StructuredNote {
   const sentences = transcript
     .replace(/\s+/g, " ")
-    .split(/(?<=[.!?])\s+|,\s+(?=(?:and\s+)?(?:i\s+)?(?:also\s+)?(?:need|have|should|gotta|remember|don't forget))/i)
+    .split(
+      /(?<=[.!?])\s+|,?\s+and\s+(?=(?:i\s+)?(?:also\s+)?(?:need|have|should|gotta|remember to|don't forget|make sure))|,\s+(?=(?:i\s+)?(?:also\s+)?(?:need|have|should|gotta|remember|don't forget))/i
+    )
     .map((s) => s.trim())
     .filter(Boolean);
 

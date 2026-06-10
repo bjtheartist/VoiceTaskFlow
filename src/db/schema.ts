@@ -10,6 +10,9 @@ import {
 
 export const entries = pgTable("entries", {
   id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, {
+    onDelete: "set null",
+  }),
   entryDate: date("entry_date").notNull(),
   transcript: text("transcript").notNull(),
   summary: text("summary").notNull(),

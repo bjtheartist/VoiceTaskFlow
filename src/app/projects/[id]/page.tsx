@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { projects, tasks } from "@/db/schema";
+import { projects, tasks, entries } from "@/db/schema";
 import TaskItem from "@/components/TaskItem";
 import AddTask from "@/components/AddTask";
 import DeleteProject from "@/components/DeleteProject";
+import EntryCard from "@/components/EntryCard";
 import { shortLabel } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
@@ -25,11 +26,18 @@ export default async function ProjectPage({
     .where(eq(projects.id, projectId));
   if (!project) notFound();
 
-  const projectTasks = await db
-    .select()
-    .from(tasks)
-    .where(eq(tasks.projectId, projectId))
-    .orderBy(asc(tasks.done), asc(tasks.createdAt));
+  const [projectTasks, projectEntries] = await Promise.all([
+    db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.projectId, projectId))
+      .orderBy(asc(tasks.done), asc(tasks.createdAt)),
+    db
+      .select()
+      .from(entries)
+      .where(eq(entries.projectId, projectId))
+      .orderBy(desc(entries.createdAt)),
+  ]);
 
   const done = projectTasks.filter((t) => t.done).length;
   const total = projectTasks.length;
@@ -97,7 +105,21 @@ export default async function ProjectPage({
         <AddTask projectId={project.id} />
       </section>
 
-      <div className="rise rise-3 mt-14 flex justify-end border-t border-ink-700 pt-4">
+      {projectEntries.length > 0 && (
+        <section className="rise rise-3 mt-10">
+          <div className="mb-4 flex items-center gap-4">
+            <h2 className="shrink-0 font-display text-lg text-cream-100">Notes</h2>
+            <div className="h-px flex-1 bg-ink-700" />
+          </div>
+          <div className="space-y-3">
+            {projectEntries.map((e) => (
+              <EntryCard key={e.id} entry={e} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="rise rise-4 mt-14 flex justify-end border-t border-ink-700 pt-4">
         <DeleteProject projectId={project.id} />
       </div>
     </div>

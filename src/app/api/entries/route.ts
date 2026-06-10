@@ -15,6 +15,8 @@ export async function POST(req: NextRequest) {
       typeof body.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date)
         ? body.date
         : todayISO();
+    const projectId =
+      typeof body.projectId === "number" ? body.projectId : null;
 
     const structured = await structureTranscript(transcript);
 
@@ -22,6 +24,7 @@ export async function POST(req: NextRequest) {
       .insert(entries)
       .values({
         entryDate,
+        projectId,
         transcript,
         summary: structured.summary,
         mood: structured.mood,
@@ -35,6 +38,7 @@ export async function POST(req: NextRequest) {
         .values(
           structured.tasks.map((title) => ({
             entryId: entry.id,
+            projectId,
             title,
             taskDate: entryDate,
           }))

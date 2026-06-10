@@ -101,7 +101,7 @@ export default function TaskItem({
             className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider transition-colors ${
               project
                 ? "border-transparent"
-                : "border-dashed border-ink-600 text-ink-600 opacity-0 hover:border-ink-400 hover:text-ink-300 group-hover:opacity-100"
+                : "border-dashed border-ink-600 text-ink-400 hover:border-ink-400 hover:text-ink-300"
             }`}
             style={
               project

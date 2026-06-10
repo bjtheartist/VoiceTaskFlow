@@ -35,9 +35,16 @@ function getRecognition(): SpeechRecognitionLike | null {
 
 type Phase = "idle" | "recording" | "processing";
 
-export default function Recorder() {
+interface ProjectOption {
+  id: number;
+  name: string;
+  color: string;
+}
+
+export default function Recorder({ projects = [] }: { projects?: ProjectOption[] }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
+  const [projectId, setProjectId] = useState<number | null>(null);
   const [finalText, setFinalText] = useState("");
   const [interimText, setInterimText] = useState("");
   const [typing, setTyping] = useState(false);
@@ -130,6 +137,7 @@ export default function Recorder() {
         body: JSON.stringify({
           transcript,
           date: new Intl.DateTimeFormat("en-CA").format(new Date()),
+          ...(projectId ? { projectId } : {}),
         }),
       });
       if (!res.ok) {
@@ -195,6 +203,41 @@ export default function Recorder() {
           ? "distilling your note"
           : "tap to speak your day"}
       </p>
+
+      {/* File the note (and its tasks) under a project */}
+      {projects.length > 0 && (
+        <div className="mt-5 flex max-w-lg flex-wrap items-center justify-center gap-2">
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-400">
+            file under
+          </span>
+          <button
+            onClick={() => setProjectId(null)}
+            disabled={phase === "processing"}
+            className={`rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider transition-colors ${
+              projectId === null
+                ? "border-cream-200/60 text-cream-200"
+                : "border-ink-600 text-ink-400 hover:border-ink-400 hover:text-ink-300"
+            }`}
+          >
+            just today
+          </button>
+          {projects.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setProjectId(projectId === p.id ? null : p.id)}
+              disabled={phase === "processing"}
+              className="rounded-full border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider transition-colors"
+              style={
+                projectId === p.id
+                  ? { color: p.color, borderColor: p.color, background: p.color + "1a" }
+                  : { color: "var(--color-ink-400)", borderColor: "var(--color-ink-600)" }
+              }
+            >
+              {p.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Live transcript */}
       {liveText && phase !== "idle" && (
