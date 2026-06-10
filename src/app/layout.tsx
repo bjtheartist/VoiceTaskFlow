@@ -48,6 +48,9 @@ export default function RootLayout({
             <Link href="/" className="text-ink-300 hover:text-ember-300 transition-colors">
               Today
             </Link>
+            <Link href="/projects" className="text-ink-300 hover:text-ember-300 transition-colors">
+              Projects
+            </Link>
             <Link href="/journal" className="text-ink-300 hover:text-ember-300 transition-colors">
               Journal
             </Link>

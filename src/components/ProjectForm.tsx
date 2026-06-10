@@ -3,28 +3,24 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function AddTask({ projectId }: { projectId?: number }) {
+export default function ProjectForm() {
   const router = useRouter();
-  const [title, setTitle] = useState("");
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
-  async function add(e: React.FormEvent) {
+  async function create(e: React.FormEvent) {
     e.preventDefault();
-    const t = title.trim();
-    if (!t || busy) return;
+    const n = name.trim();
+    if (!n || busy) return;
     setBusy(true);
     try {
-      const res = await fetch("/api/tasks", {
+      const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: t,
-          date: new Intl.DateTimeFormat("en-CA").format(new Date()),
-          ...(projectId ? { projectId } : {}),
-        }),
+        body: JSON.stringify({ name: n }),
       });
       if (res.ok) {
-        setTitle("");
+        setName("");
         router.refresh();
       }
     } finally {
@@ -33,25 +29,28 @@ export default function AddTask({ projectId }: { projectId?: number }) {
   }
 
   return (
-    <form onSubmit={add} className="mt-1 flex items-center gap-3 px-3 py-2">
+    <form
+      onSubmit={create}
+      className="flex items-center gap-3 rounded-xl border border-dashed border-ink-600 px-4 py-3 transition-colors focus-within:border-ember-400/50"
+    >
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-dashed border-ink-600 text-ink-400">
         <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none">
           <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       </span>
       <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="Add a task by hand…"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Start a new project…"
         className="min-w-0 flex-1 bg-transparent font-body text-[17px] text-cream-100 placeholder:italic placeholder:text-ink-400 focus:outline-none"
       />
-      {title.trim() && (
+      {name.trim() && (
         <button
           type="submit"
           disabled={busy}
           className="font-mono text-[11px] uppercase tracking-[0.15em] text-ember-400 hover:text-ember-300 disabled:opacity-50"
         >
-          Add
+          Create
         </button>
       )}
     </form>

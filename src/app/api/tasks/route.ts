@@ -15,7 +15,13 @@ export async function POST(req: NextRequest) {
         ? body.date
         : todayISO();
 
-    const [task] = await db.insert(tasks).values({ title, taskDate }).returning();
+    const projectId =
+      typeof body.projectId === "number" ? body.projectId : null;
+
+    const [task] = await db
+      .insert(tasks)
+      .values({ title, taskDate, projectId })
+      .returning();
     return NextResponse.json({ task });
   } catch (err) {
     console.error("Failed to create task:", err);

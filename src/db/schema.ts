@@ -19,9 +19,21 @@ export const entries = pgTable("entries", {
     .notNull(),
 });
 
+export const projects = pgTable("projects", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  color: text("color").notNull().default("#eaa83f"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   entryId: integer("entry_id").references(() => entries.id, {
+    onDelete: "set null",
+  }),
+  projectId: integer("project_id").references(() => projects.id, {
     onDelete: "set null",
   }),
   title: text("title").notNull(),
@@ -35,3 +47,4 @@ export const tasks = pgTable("tasks", {
 
 export type Entry = typeof entries.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
+export type Project = typeof projects.$inferSelect;

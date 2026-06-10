@@ -2,18 +2,25 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Task } from "@/db/schema";
+import type { Task, Project } from "@/db/schema";
 
 export default function TaskItem({
   task,
   showDate,
+  projects,
+  hideProjectTag,
 }: {
   task: Task;
   showDate?: string;
+  projects?: Pick<Project, "id" | "name" | "color">[];
+  hideProjectTag?: boolean;
 }) {
   const router = useRouter();
   const [done, setDone] = useState(task.done);
   const [busy, setBusy] = useState(false);
+  const [picking, setPicking] = useState(false);
+
+  const project = projects?.find((p) => p.id === task.projectId);
 
   async function toggle() {
     if (busy) return;
@@ -35,6 +42,21 @@ export default function TaskItem({
     }
   }
 
+  async function assign(projectId: number | null) {
+    setPicking(false);
+    setBusy(true);
+    try {
+      await fetch(`/api/tasks/${task.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId }),
+      });
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function remove() {
     if (busy) return;
     setBusy(true);
@@ -48,7 +70,7 @@ export default function TaskItem({
 
   return (
     <li
-      className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-ink-800/70 ${
+      className={`group flex flex-wrap items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-ink-800/70 ${
         done ? "task-done" : ""
       }`}
     >
@@ -69,6 +91,59 @@ export default function TaskItem({
       <span className="min-w-0 flex-1 font-body text-[17px] leading-snug text-cream-100">
         <span className="task-title">{task.title}</span>
       </span>
+
+      {/* Project tag / picker */}
+      {projects && !hideProjectTag && (
+        <span className="relative shrink-0">
+          <button
+            onClick={() => setPicking((v) => !v)}
+            disabled={busy}
+            className={`rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider transition-colors ${
+              project
+                ? "border-transparent"
+                : "border-dashed border-ink-600 text-ink-600 opacity-0 hover:border-ink-400 hover:text-ink-300 group-hover:opacity-100"
+            }`}
+            style={
+              project
+                ? { color: project.color, borderColor: project.color + "55" }
+                : undefined
+            }
+          >
+            {project ? project.name : "+ project"}
+          </button>
+          {picking && (
+            <span className="absolute right-0 top-7 z-20 flex min-w-36 flex-col overflow-hidden rounded-lg border border-ink-600 bg-ink-800 py-1 shadow-xl">
+              {projects.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => assign(p.id)}
+                  className="flex items-center gap-2 px-3 py-1.5 text-left font-mono text-[11px] uppercase tracking-wider text-cream-200 hover:bg-ink-700"
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ background: p.color }}
+                  />
+                  {p.name}
+                </button>
+              ))}
+              {task.projectId && (
+                <button
+                  onClick={() => assign(null)}
+                  className="px-3 py-1.5 text-left font-mono text-[11px] uppercase tracking-wider text-ink-400 hover:bg-ink-700"
+                >
+                  remove from project
+                </button>
+              )}
+              {projects.length === 0 && (
+                <span className="px-3 py-1.5 font-mono text-[11px] text-ink-400">
+                  no projects yet
+                </span>
+              )}
+            </span>
+          )}
+        </span>
+      )}
+
       {showDate && (
         <span className="shrink-0 font-mono text-[10px] uppercase tracking-wider text-ink-400">
           {showDate}

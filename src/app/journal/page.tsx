@@ -1,6 +1,6 @@
 import { desc, asc } from "drizzle-orm";
 import { db } from "@/db";
-import { entries, tasks } from "@/db/schema";
+import { entries, tasks, projects } from "@/db/schema";
 import { relativeLabel, todayISO } from "@/lib/dates";
 import TaskItem from "@/components/TaskItem";
 import EntryCard from "@/components/EntryCard";
@@ -22,9 +22,13 @@ function computeStreak(dates: string[], today: string): number {
 }
 
 export default async function JournalPage() {
-  const [allEntries, allTasks] = await Promise.all([
+  const [allEntries, allTasks, allProjects] = await Promise.all([
     db.select().from(entries).orderBy(desc(entries.createdAt)),
     db.select().from(tasks).orderBy(asc(tasks.createdAt)),
+    db
+      .select({ id: projects.id, name: projects.name, color: projects.color })
+      .from(projects)
+      .orderBy(asc(projects.name)),
   ]);
 
   const days = new Map<string, { entries: Entry[]; tasks: Task[] }>();
@@ -100,7 +104,7 @@ export default async function JournalPage() {
                   {dayTasks.length > 0 && (
                     <ul className="space-y-0.5 pt-1">
                       {dayTasks.map((t) => (
-                        <TaskItem key={t.id} task={t} />
+                        <TaskItem key={t.id} task={t} projects={allProjects} />
                       ))}
                     </ul>
                   )}

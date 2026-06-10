@@ -22,6 +22,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     if (typeof body.title === "string" && body.title.trim()) {
       updates.title = body.title.trim();
     }
+    if ("projectId" in body) {
+      updates.projectId =
+        typeof body.projectId === "number" ? body.projectId : null;
+    }
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
     }

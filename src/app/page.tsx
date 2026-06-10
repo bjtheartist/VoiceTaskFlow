@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, lt } from "drizzle-orm";
 import { db } from "@/db";
-import { entries, tasks } from "@/db/schema";
+import { entries, tasks, projects } from "@/db/schema";
 import { todayISO, dayLabel, shortLabel } from "@/lib/dates";
 import Recorder from "@/components/Recorder";
 import TaskItem from "@/components/TaskItem";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function TodayPage() {
   const today = todayISO();
 
-  const [todayEntries, todayTasks, carryover] = await Promise.all([
+  const [todayEntries, todayTasks, carryover, allProjects] = await Promise.all([
     db
       .select()
       .from(entries)
@@ -28,6 +28,10 @@ export default async function TodayPage() {
       .from(tasks)
       .where(and(lt(tasks.taskDate, today), eq(tasks.done, false)))
       .orderBy(asc(tasks.taskDate)),
+    db
+      .select({ id: projects.id, name: projects.name, color: projects.color })
+      .from(projects)
+      .orderBy(asc(projects.name)),
   ]);
 
   const doneCount = todayTasks.filter((t) => t.done).length;
@@ -60,7 +64,7 @@ export default async function TodayPage() {
         ) : (
           <ul className="space-y-0.5">
             {todayTasks.map((t) => (
-              <TaskItem key={t.id} task={t} />
+              <TaskItem key={t.id} task={t} projects={allProjects} />
             ))}
           </ul>
         )}
@@ -77,7 +81,12 @@ export default async function TodayPage() {
           </h2>
           <ul className="space-y-0.5">
             {carryover.map((t) => (
-              <TaskItem key={t.id} task={t} showDate={shortLabel(t.taskDate)} />
+              <TaskItem
+                key={t.id}
+                task={t}
+                showDate={shortLabel(t.taskDate)}
+                projects={allProjects}
+              />
             ))}
           </ul>
         </section>
