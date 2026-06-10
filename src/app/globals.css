@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink-950: #0e1015;
+  --color-ink-900: #13151c;
+  --color-ink-800: #1a1d26;
+  --color-ink-700: #232734;
+  --color-ink-600: #303544;
+  --color-ink-400: #6a7080;
+  --color-ink-300: #8d93a3;
+
+  --color-cream-100: #f1ead9;
+  --color-cream-200: #ddd5c2;
+  --color-cream-400: #b3aa94;
+
+  --color-ember-300: #f5c46a;
+  --color-ember-400: #eaa83f;
+  --color-ember-500: #d98f24;
+
+  --color-sage-400: #93b08a;
+
+  --font-display: var(--font-fraunces), "Georgia", serif;
+  --font-body: var(--font-newsreader), "Georgia", serif;
+  --font-mono: var(--font-jetbrains), monospace;
+}
+
+html {
+  background: var(--color-ink-950);
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--color-cream-100);
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(234, 168, 63, 0.06), transparent),
+    var(--color-ink-950);
+  min-height: 100vh;
+}
+
+::selection {
+  background: rgba(234, 168, 63, 0.3);
+}
+
+/* Record orb pulse rings */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.pulse-ring {
+  animation: pulse-ring 1.8s cubic-bezier(0.2, 0.6, 0.4, 1) infinite;
+}
+
+.pulse-ring-delay {
+  animation: pulse-ring 1.8s cubic-bezier(0.2, 0.6, 0.4, 1) 0.6s infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.orb-recording {
+  animation: breathe 1.6s ease-in-out infinite;
+}
+
+/* Staggered page-load reveal */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise-in 0.6s ease-out both;
+}
+.rise-1 { animation-delay: 0.05s; }
+.rise-2 { animation-delay: 0.15s; }
+.rise-3 { animation-delay: 0.25s; }
+.rise-4 { animation-delay: 0.35s; }
+
+/* Task check strike-through transition */
+.task-title {
+  transition: color 0.3s ease, opacity 0.3s ease;
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-size: 0% 1px;
+  background-position: 0 55%;
+  transition: background-size 0.35s ease, color 0.3s ease, opacity 0.3s ease;
+}
+
+.task-done .task-title {
+  background-size: 100% 1px;
+  color: var(--color-ink-400);
+}

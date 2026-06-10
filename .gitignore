@@ -1,14 +1,8 @@
-node_modules
-dist
+node_modules/
+.next/
+out/
+.env*
+!.env.example
 .DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
-
-# Environment files (contain secrets)
-.env
-.env.local
-
-# IDE/Editor
-.local/
-.breakpoints
+*.tsbuildinfo
+next-env.d.ts
