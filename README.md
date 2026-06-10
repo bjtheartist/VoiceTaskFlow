@@ -1,6 +1,6 @@
-# Murmur — voice journal
+# Verbatim — voice journal
 
-Speak your day. Murmur records a voice note, transcribes it live in the browser,
+Speak your day. Verbatim records a voice note, transcribes it live in the browser,
 and uses Claude to distill it into a journal entry plus individual, checkable tasks.
 
 This is the v2 rewrite of VoiceTaskFlow.

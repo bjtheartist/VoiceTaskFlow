@@ -22,8 +22,8 @@ const jetbrains = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Murmur — voice journal",
-  description: "Speak your day. Murmur turns voice notes into a daily task journal.",
+  title: "Verbatim — voice journal",
+  description: "Speak your day. Verbatim turns voice notes into a daily task journal.",
 };
 
 export default function RootLayout({
@@ -38,7 +38,7 @@ export default function RootLayout({
         <header className="mx-auto flex w-full max-w-2xl items-baseline justify-between px-6 pt-8 pb-2">
           <Link href="/" className="group">
             <span className="font-display text-2xl tracking-tight text-cream-100">
-              Murmur
+              Verbatim
             </span>
             <span className="ml-2 font-mono text-[11px] uppercase tracking-[0.2em] text-ink-400 group-hover:text-ember-400 transition-colors">
               voice journal

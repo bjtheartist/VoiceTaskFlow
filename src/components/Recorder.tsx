@@ -227,7 +227,7 @@ export default function Recorder() {
             onChange={(e) => setTypedText(e.target.value)}
             rows={4}
             autoFocus
-            placeholder="Write your note — Murmur will pull out the tasks…"
+            placeholder="Write your note — Verbatim will pull out the tasks…"
             className="w-full rounded-xl border border-ink-600 bg-ink-900 p-4 font-body text-base text-cream-100 placeholder:text-ink-400 focus:border-ember-400/60 focus:outline-none"
           />
           <div className="mt-2 flex justify-end gap-3 font-mono text-[12px] uppercase tracking-[0.15em]">
